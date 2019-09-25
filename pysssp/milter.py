@@ -27,7 +27,7 @@ from multiprocessing import Process
 import Milter
 from Milter.utils import parse_addr
 import syslog
-import sssp
+import pysssp
 import textwrap
 import traceback
 
@@ -81,7 +81,7 @@ class ssspMilter(Milter.Base):
   def eom(self):
     self.queue_id = self.getsymval('i')
     try:
-      scanner = sssp.sssp(args.sssp_socket)
+      scanner = pysssp.sssp(args.sssp_socket)
       if not scanner.selftest():
         self.log('SAVDI selftest failed. Not scanning, accepting mail.')
         return Milter.ACCEPT
@@ -113,6 +113,12 @@ class ssspMilter(Milter.Base):
 
 def main():
   global args
+  parser = argparse.ArgumentParser(description='Milter to scan mail for viruses via SSSP.')
+  parser.add_argument('-q', '--quarantine', action='store_true', default=False, help='Quarantine suspect mail rather than rejecting it.')
+  parser.add_argument('-r', '--reject', action='store_true', default=False, help='Reject suspect mail rather than accepting and marking it.')
+  parser.add_argument('socket', help='Milter socket for communicating to postfix')
+  parser.add_argument('sssp_socket', help='Socket for communicating to sssp interface.')
+  args = parser.parse_args()
 
   syslog.openlog(ident='milter-sssp', logoption=syslog.LOG_PID, facility=syslog.LOG_MAIL)
   syslog.syslog('Milter starting using socket {}'.format(args.socket))
@@ -124,13 +130,3 @@ def main():
   job.join()
   syslog.syslog('Milter stopping')
   syslog.closelog()
-
-if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Milter to scan mail for viruses via SSSP.')
-  parser.add_argument('-q', '--quarantine', action='store_true', default=False, help='Quarantine suspect mail rather than rejecting it.')
-  parser.add_argument('-r', '--reject', action='store_true', default=False, help='Reject suspect mail rather than accepting and marking it.')
-  parser.add_argument('socket', help='Milter socket for communicating to postfix')
-  parser.add_argument('sssp_socket', help='Socket for communicating to sssp interface.')
-  args = parser.parse_args()
-
-  main()

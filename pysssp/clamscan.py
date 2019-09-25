@@ -25,20 +25,23 @@ import os
 import socket
 import sys
 import syslog
-import sssp
+import pysssp
 import traceback
-
-global args
 
 class ssspPipe():
   name = 'clam-scan'
+  sssp_socket = None
+
+  def __init__(self, **kwargs):
+      if 'sssp_socket' in kwargs:
+          self.sssp_socket = kwargs['sssp_socket']
 
   def log(self, msg):
       syslog.syslog('{}: {}'.format(self.name, msg))
 
   def file(self, name):
     try:
-      scanner = sssp.sssp(args.sssp_socket)
+      scanner = pysssp.sssp(self.sssp_socket)
       if not scanner.selftest():
         self.log('SAVDI selftest failed. Not scanning.')
         return (2,'Unknown: ERROR')
@@ -62,19 +65,6 @@ class ssspPipe():
     return (0,'Data: OK')
 
 def main():
-  global args
-
-  syslog.openlog(ident='clam-scan', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
-  syslog.syslog('ClamAV emulator starting using socket {}'.format(args.sssp_socket))
-  pipe = ssspPipe()
-  scan_rc, scan_result = pipe.file(args.file)
-  syslog.syslog('ClamAV emulator stopping')
-  syslog.closelog()
-  if scan_result:
-    print(scan_result)
-  return scan_rc
-
-if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='ClamAV emulator scans files for viruses via Sophos SSSP.')
   parser.add_argument('-q', '--quarantine', action='store_true', default=False, help='Not implemented yet')
   parser.add_argument('-r', '--remove', action='store_true', default=False, help='Drop original file if ')
@@ -82,5 +72,12 @@ if __name__ == "__main__":
   parser.add_argument('file', help='File to scan or - to read from stdin')
   args = parser.parse_args()
 
-  rc = main()
-  sys.exit(rc)
+  syslog.openlog(ident='clam-scan', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
+  syslog.syslog('ClamAV emulator starting using socket {}'.format(args.sssp_socket))
+  pipe = ssspPipe(sssp_socket=args.sssp_socket)
+  scan_rc, scan_result = pipe.file(args.file)
+  syslog.syslog('ClamAV emulator stopping')
+  syslog.closelog()
+  if scan_result:
+    print(scan_result)
+  sys.exit(scan_rc)
