@@ -25,7 +25,7 @@ import os
 import socket
 import sys
 import syslog
-import sssp
+import pysssp
 import traceback
 
 global args
@@ -62,7 +62,12 @@ class ssspPipe():
     return (0,'Data: OK')
 
 def main():
-  global args
+  parser = argparse.ArgumentParser(description='ClamAV emulator scans files for viruses via Sophos SSSP.')
+  parser.add_argument('-q', '--quarantine', action='store_true', default=False, help='Not implemented yet')
+  parser.add_argument('-r', '--remove', action='store_true', default=False, help='Drop original file if ')
+  parser.add_argument('-S', '--sssp_socket', default='/var/run/savdid/savdid.sock', help='Socket for communicating to sssp interface.')
+  parser.add_argument('file', help='File to scan or - to read from stdin')
+  args = parser.parse_args()
 
   syslog.openlog(ident='clam-scan', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
   syslog.syslog('ClamAV emulator starting using socket {}'.format(args.sssp_socket))
@@ -72,15 +77,4 @@ def main():
   syslog.closelog()
   if scan_result:
     print(scan_result)
-  return scan_rc
-
-if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='ClamAV emulator scans files for viruses via Sophos SSSP.')
-  parser.add_argument('-q', '--quarantine', action='store_true', default=False, help='Not implemented yet')
-  parser.add_argument('-r', '--remove', action='store_true', default=False, help='Drop original file if ')
-  parser.add_argument('-S', '--sssp_socket', default='/var/run/savdid/savdid.sock', help='Socket for communicating to sssp interface.')
-  parser.add_argument('file', help='File to scan or - to read from stdin')
-  args = parser.parse_args()
-
-  rc = main()
-  sys.exit(rc)
+  sys.exit(scan_rc)
