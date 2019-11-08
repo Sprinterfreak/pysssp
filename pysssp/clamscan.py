@@ -47,10 +47,10 @@ class ssspPipe():
         return (2,'Unknown: ERROR')
       if name == '-':
         with sys.stdin as f:
-          result, msg = scanner.check(f.read())
+          result, msg = scanner.check(f)
       else:
         with open(name, 'r') as f:
-          result, msg = scanner.check(f.read())
+          result, msg = scanner.check(f)
     except:
       self.log('Unknown SAVDI Error. {}'.format(traceback.format_exc()))
       return (2,'Unknown: ERROR')

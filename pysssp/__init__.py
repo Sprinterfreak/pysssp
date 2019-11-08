@@ -22,6 +22,7 @@
 import pprint
 import codecs
 import socket
+import StringIO
 import sys
 
 class SSSPError(Exception):
@@ -83,7 +84,7 @@ class sssp():
           wait += 1
           continue
       line.append(c)
-      if c == "\n":
+      if not c or c == "\n":
           break
     return "".join(line)
 
@@ -239,9 +240,18 @@ class sssp():
     done.extend([x for x in resp if x.startswith('DONE ')])
     return (done, ok, fail, virus)
 
-  def check(self, data):
+  def check(self, fd):
     """Check a string for a virus"""
-    done, ok, fail, virus = self.scan(data)
+    while True:
+        chunk = fd.read(50000000)
+        if not chunk:
+            break
+        done, ok, fail, virus = self.scan(chunk)
+        if len(fail) > 0:
+            break
+        if len(virus) > 0:
+            break
+
     _, state, code, msg = done[-1].split(' ', 3)
     if code == '0000':
       return (True, 'Message is clean')
@@ -256,7 +266,8 @@ class sssp():
     Send the eicar test string to the savdi socket and raise an exception if
     the report comes back clean.
     """
-    res, msg = self.check(codecs.encode(self.eicar, 'rot_13'))
+    eicar_cmd = codecs.encode(self.eicar, 'rot_13')
+    res, msg = self.check(StringIO.StringIO(eicar_cmd))
     if res or not 'EICAR-AV-Test' in msg:
       raise SSSPError('Selftest failed. EICAR Virus was not detected.')
     return True

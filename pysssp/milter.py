@@ -30,6 +30,7 @@ import syslog
 import pysssp
 import textwrap
 import traceback
+import StringIO
 
 milter_name = 'milter-sssp'
 milter_version = '0.1.0'
@@ -85,7 +86,7 @@ class ssspMilter(Milter.Base):
       if not scanner.selftest():
         self.log('SAVDI selftest failed. Not scanning, accepting mail.')
         return Milter.ACCEPT
-      result, msg = scanner.check(self.mail)
+      result, msg = scanner.check(StringIO.StringIO(self.mail))
     except:
       self.log('Unknown SAVDI Error. {}'.format(traceback.format_exc()))
       return Milter.ACCEPT
